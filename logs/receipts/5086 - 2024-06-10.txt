@@ -1,0 +1,7 @@
+Transaction Receipt
+===================
+Transaction ID: 5086
+Date: 2024-06-10
+Total Amount: ?720.00
+Amount Paid: ?700.00
+Order Status: pending

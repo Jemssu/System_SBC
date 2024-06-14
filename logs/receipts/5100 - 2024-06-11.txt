@@ -1,0 +1,8 @@
+Transaction Receipt
+===================
+Transaction ID: 5100
+Date: 2024-06-11
+Total Amount: ?159.00
+Amount Paid: ?300.00
+Order Status: paid
+Change: ?141.00

@@ -1,0 +1,3 @@
+dateSelectRange.fromDate = 2024-06-14
+dateSelectRange.toDate = 2024-06-15
+orderStatus.showStatus = paid

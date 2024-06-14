@@ -1,0 +1,8 @@
+Transaction Receipt
+===================
+Transaction ID: 5085
+Date: 2024-06-07
+Total Amount: $10.00
+Amount Paid: $100.00
+Order Status: paid
+Change: $90.00

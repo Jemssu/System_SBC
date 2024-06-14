@@ -1,0 +1,8 @@
+Transaction Receipt
+===================
+Transaction ID: 5099
+Date: 2024-06-11
+Total Amount: ?100.00
+Amount Paid: ?300.00
+Order Status: paid
+Change: ?200.00
