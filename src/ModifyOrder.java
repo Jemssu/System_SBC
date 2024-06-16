@@ -451,7 +451,7 @@ public class ModifyOrder extends JFrame {
         searchProductButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                ops.seeProductList();
+                ops.seeProductList(enterIdTextField);
             }
         });   
 

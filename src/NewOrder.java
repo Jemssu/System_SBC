@@ -23,7 +23,6 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
-import javax.swing.UIManager;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.table.DefaultTableModel;
@@ -381,7 +380,7 @@ public class NewOrder extends JFrame {
                     button6.setBackground(Color.decode(buttonColorOff)); // Change color when pressed
                     System.out.println("Button 6 - Is Pressed");
                 } else {
-                    //button6.setBackground(Color.decode(buttonColor)); // Change color back when released
+                    button6.setBackground(Color.decode(buttonColor)); // Change color back when released
                 }
             }
         });
@@ -478,7 +477,7 @@ public class NewOrder extends JFrame {
         searchProductButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                ops.seeProductList();
+                ops.seeProductList(enterIdTextField);
             }
         });   
 
@@ -646,6 +645,9 @@ public class NewOrder extends JFrame {
 
         button5.setEnabled(false);
         button5.setBackground(Color.decode("#84817a"));
+
+        button6.setEnabled(false);
+        button6.setBackground(Color.decode("#84817a"));
 
         addButton.setEnabled(true);
         addButton.setBackground(Color.decode(buttonColor));

@@ -1,0 +1,8 @@
+Transaction Receipt
+===================
+Transaction ID: 7012
+Date: 2024-06-16
+Total Amount: ?20.00
+Amount Paid: ?100.00
+Order Status: paid
+Change: ?80.00

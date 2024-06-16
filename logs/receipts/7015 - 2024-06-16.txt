@@ -1,0 +1,7 @@
+Transaction Receipt
+===================
+Transaction ID: 7015
+Date: 2024-06-16
+Total Amount: ?7.10
+Amount Paid: ?5.00
+Order Status: pending

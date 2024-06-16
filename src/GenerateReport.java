@@ -816,7 +816,7 @@ public class GenerateReport extends JFrame{
      * Establishes Connection to the database
      */
     private Connection connect() throws SQLException {
-        String url1 = "jdbc:mysql://localhost:3306/prj_tan";
+        String url1 = "jdbc:mysql://localhost:3306/sad_system";
         String url2 = "jdbc:mysql://localhost:3306/prj_yanez"; // <-- Put Your Database Name Here
         String username = "root";
         String password = ""; 
@@ -824,11 +824,11 @@ public class GenerateReport extends JFrame{
         try {
             return DriverManager.getConnection(url1, username, password);
         } catch (SQLException e1) {
-            System.out.println("Failed to connect to prj_tan, attempting to connect to prj_yanez...");
+            System.out.println("Failed to connect to sad_system, attempting to connect to prj_yanez...");
             try {
                 return DriverManager.getConnection(url2, username, password);
             } catch (SQLException e2) {
-                System.err.println("Failed to connect to both prj_tan and prj_yanez.");
+                System.err.println("Failed to connect to both sad_system and prj_yanez.");
                 e2.printStackTrace();
                 throw e2;  // rethrow the last exception
             }

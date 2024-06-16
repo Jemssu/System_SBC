@@ -23,9 +23,8 @@ import javax.swing.table.TableColumn;
 import javax.swing.table.TableColumnModel;
 import javax.swing.*;
 import java.awt.*;
-import org.apache.poi.ss.usermodel.CellStyle;
+
 import org.apache.poi.ss.usermodel.Font;
-import org.apache.poi.ss.usermodel.Workbook;
 /**
  * import org.apache.poi.ss.usermodel.CellStyle;
  * import org.apache.poi.ss.usermodel.Font;
@@ -42,7 +41,7 @@ public class Operations {
      * Establishes Connection to the database
      */
     private Connection connect() throws SQLException {
-        String url1 = "jdbc:mysql://localhost:3306/prj_tan";
+        String url1 = "jdbc:mysql://localhost:3306/sad_system";
         String url2 = "jdbc:mysql://localhost:3306/prj_yanez"; // <-- Put Your Database Name Here
         String username = "root";
         String password = ""; 
@@ -50,11 +49,11 @@ public class Operations {
         try {
             return DriverManager.getConnection(url1, username, password);
         } catch (SQLException e1) {
-            System.out.println("Failed to connect to prj_tan, attempting to connect to prj_yanez...");
+            System.out.println("Failed to connect to sad_system, attempting to connect to prj_yanez...");
             try {
                 return DriverManager.getConnection(url2, username, password);
             } catch (SQLException e2) {
-                System.err.println("Failed to connect to both prj_tan and prj_yanez.");
+                System.err.println("Failed to connect to both sad_system and prj_yanez.");
                 e2.printStackTrace();
                 throw e2;  // rethrow the last exception
             }
@@ -2507,7 +2506,7 @@ public class Operations {
     public void newTransaction(JLabel transaction_label, int employee_ID) {
         try (Connection conn = connect()) {
             // Insert a new transaction into the database
-            String insertQuery = "INSERT INTO tbl_transaction (employee_ID, transaction_Date, transaction_TotalPrice, transaction_TotalPaid, transaction_OrderStatus, transaction_ActiveStatus) VALUES (?, CURRENT_TIMESTAMP, 0.00, 0.00, 'pending', 'active')";
+            String insertQuery = "INSERT INTO tbl_transaction (employee_ID, transaction_Date, transaction_TotalPrice, transaction_TotalPaid, transaction_OrderStatus, transaction_ActiveStatus) VALUES (?, CURRENT_TIMESTAMP, 0.00, 0.00, 'processing', 'active')";
             try (PreparedStatement pstmt = conn.prepareStatement(insertQuery, Statement.RETURN_GENERATED_KEYS)) {
                 // Set parameters
                 pstmt.setInt(1, employee_ID);
@@ -2587,6 +2586,7 @@ public class Operations {
     public void addItemToTransaction(int productID, DefaultTableModel transactionTableModel, int transactionID) {
         System.out.println("Received product ID in addItemToTransaction: " + productID);
         System.out.println("Transaction ID in addItemToTransaction: " + transactionID);
+        
         try (Connection conn = connect()) {
             // Check if the product exists
             if (!doesProductExist(productID)) {
@@ -2595,21 +2595,21 @@ public class Operations {
             }
     
             // Fetch product details including price
-            String query = "SELECT product_Name, product_Price FROM tbl_product WHERE product_ID = ?";
+            String query = "SELECT product_Name, product_Price, product_StockLeft FROM tbl_product WHERE product_ID = ?";
             try (PreparedStatement pstmt = conn.prepareStatement(query)) {
                 pstmt.setInt(1, productID);
                 try (ResultSet rs = pstmt.executeQuery()) {
                     if (rs.next()) {
                         String productName = rs.getString("product_Name");
                         double productPrice = rs.getDouble("product_Price");
-                        
+    
                         // Prompt the user for the quantity to add
                         String quantityString = JOptionPane.showInputDialog(null, "Enter quantity to add:", "Add Item", JOptionPane.PLAIN_MESSAGE);
                         if (quantityString == null || quantityString.isEmpty()) {
                             // User canceled or entered an empty string
                             return;
                         }
-                        
+    
                         // Convert the input to integer
                         int quantity;
                         try {
@@ -2621,32 +2621,60 @@ public class Operations {
                             JOptionPane.showMessageDialog(null, "Error: Invalid quantity.", "Error", JOptionPane.ERROR_MESSAGE);
                             return;
                         }
-                        
+    
                         // Check if there is enough product
                         if (!isThereEnoughProduct(productID, quantity)) {
                             JOptionPane.showMessageDialog(null, "Error: Not enough product in stock.", "Error", JOptionPane.ERROR_MESSAGE);
                             return;
                         }
-
-                        // Add the item to the transaction table
-                        double subtotal = productPrice * quantity;
-
-                        // Insert the item into tbl_item
-                        String insertQuery = "INSERT INTO tbl_item (product_ID, transaction_ID, product_Quantity, item_Price, item_SubTotal) VALUES (?, ?, ?, ?, ?)";
-                        try (PreparedStatement insertPstmt = conn.prepareStatement(insertQuery)) {
-                            insertPstmt.setInt(1, productID);
-                            insertPstmt.setInt(2, transactionID);
-                            insertPstmt.setInt(3, quantity);
-                            insertPstmt.setDouble(4, productPrice);
-                            insertPstmt.setDouble(5, subtotal);
-                            int rowsInserted = insertPstmt.executeUpdate();
-                            System.out.println("Rows inserted into tbl_item: " + rowsInserted);
+    
+                        // Check if the product is already in the transaction table
+                        boolean productAlreadyAdded = false;
+                        for (int i = 0; i < transactionTableModel.getRowCount(); i++) {
+                            int tableProductID = (int) transactionTableModel.getValueAt(i, 0);
+                            if (tableProductID == productID) {
+                                // Product already exists in the transaction, update quantity and subtotal
+                                int currentQuantity = (int) transactionTableModel.getValueAt(i, 2);
+                                int newQuantity = currentQuantity + quantity;
+                                double subtotal = productPrice * newQuantity;
+    
+                                // Update the transaction table model
+                                transactionTableModel.setValueAt(newQuantity, i, 2);
+                                transactionTableModel.setValueAt(subtotal, i, 4);
+    
+                                // Update the stock
+                                removeStock(productID, quantity);
+    
+                                // Update transaction item in the database
+                                updateTransactionItem(productID, transactionID, newQuantity, productPrice, subtotal, conn);
+    
+                                productAlreadyAdded = true;
+                                break;
+                            }
                         }
-                        
-                        transactionTableModel.addRow(new Object[]{productID, productName, quantity, productPrice, subtotal});
-                        
-                        // Update the stock
-                        removeStock(productID, quantity);
+    
+                        if (!productAlreadyAdded) {
+                            // Product is not yet in the transaction, add new row
+                            double subtotal = productPrice * quantity;
+    
+                            // Insert the item into tbl_item
+                            String insertQuery = "INSERT INTO tbl_item (product_ID, transaction_ID, product_Quantity, item_Price, item_SubTotal) VALUES (?, ?, ?, ?, ?)";
+                            try (PreparedStatement insertPstmt = conn.prepareStatement(insertQuery)) {
+                                insertPstmt.setInt(1, productID);
+                                insertPstmt.setInt(2, transactionID);
+                                insertPstmt.setInt(3, quantity);
+                                insertPstmt.setDouble(4, productPrice);
+                                insertPstmt.setDouble(5, subtotal);
+                                int rowsInserted = insertPstmt.executeUpdate();
+                                System.out.println("Rows inserted into tbl_item: " + rowsInserted);
+                            }
+    
+                            // Update the transaction table model
+                            transactionTableModel.addRow(new Object[]{productID, productName, quantity, productPrice, subtotal});
+    
+                            // Update the stock
+                            removeStock(productID, quantity);
+                        }
                     }
                 }
             }
@@ -2656,7 +2684,47 @@ public class Operations {
         }
     }
     
-
+    private void updateTransactionItem(int productID, int transactionID, int newQuantity, double productPrice, double subtotal, Connection conn) {
+        try {
+            // Check if the product is already in tbl_item for the given transaction
+            String checkQuery = "SELECT * FROM tbl_item WHERE product_ID = ? AND transaction_ID = ?";
+            try (PreparedStatement checkPstmt = conn.prepareStatement(checkQuery)) {
+                checkPstmt.setInt(1, productID);
+                checkPstmt.setInt(2, transactionID);
+                try (ResultSet rs = checkPstmt.executeQuery()) {
+                    if (rs.next()) {
+                        // Product exists, update the existing row
+                        String updateQuery = "UPDATE tbl_item SET product_Quantity = ?, item_Price = ?, item_SubTotal = ? WHERE product_ID = ? AND transaction_ID = ?";
+                        try (PreparedStatement updatePstmt = conn.prepareStatement(updateQuery)) {
+                            updatePstmt.setInt(1, newQuantity);
+                            updatePstmt.setDouble(2, productPrice);
+                            updatePstmt.setDouble(3, subtotal);
+                            updatePstmt.setInt(4, productID);
+                            updatePstmt.setInt(5, transactionID);
+                            updatePstmt.executeUpdate();
+                            System.out.println("Updated existing row in tbl_item for product ID " + productID + " and transaction ID " + transactionID);
+                        }
+                    } else {
+                        // Product does not exist, insert new row (though this part should ideally not be reached)
+                        String insertQuery = "INSERT INTO tbl_item (product_ID, transaction_ID, product_Quantity, item_Price, item_SubTotal) VALUES (?, ?, ?, ?, ?)";
+                        try (PreparedStatement insertPstmt = conn.prepareStatement(insertQuery)) {
+                            insertPstmt.setInt(1, productID);
+                            insertPstmt.setInt(2, transactionID);
+                            insertPstmt.setInt(3, newQuantity);
+                            insertPstmt.setDouble(4, productPrice);
+                            insertPstmt.setDouble(5, subtotal);
+                            insertPstmt.executeUpdate();
+                            System.out.println("Inserted new row into tbl_item for product ID " + productID + " and transaction ID " + transactionID);
+                        }
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(null, "Error: Failed to update transaction item in tbl_item.", "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+    
     public boolean isThereEnoughProduct(int productID, int quantity) {
         try (Connection conn = connect()) {
             // Check if there is enough stock for the given product
@@ -2815,42 +2883,79 @@ public class Operations {
             JOptionPane.showMessageDialog(null, "Error fetching product information.", "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
-
     
-    // Method to see the product list
-    public void seeProductList() {
-        String query = "SELECT product_ID, product_Name, product_Price, product_StockLeft FROM tbl_product WHERE product_ActiveStatus = 'active'";
+    public void seeProductList(JTextField productID_Field) {
+        SwingUtilities.invokeLater(() -> {
+            String query = "SELECT product_ID, product_Name, product_Price, product_StockLeft FROM tbl_product WHERE product_ActiveStatus = 'active'";
 
-        try (Connection conn = connect();
-            Statement stmt = conn.createStatement();
-            ResultSet rs = stmt.executeQuery(query)) {
+            try (Connection conn = connect();
+                Statement stmt = conn.createStatement();
+                ResultSet rs = stmt.executeQuery(query)) {
 
-            // Prepare data for the JTable
-            DefaultTableModel model = new DefaultTableModel(new String[]{"ID", "Name", "Price", "Stock Left"}, 0);
+                DefaultTableModel model = new DefaultTableModel(new String[]{"ID", "Name", "Price", "Stock Left"}, 0) {
+                    @Override
+                    public boolean isCellEditable(int row, int column) {
+                        return false;  // All cells are non-editable
+                    }
+                };
 
-            while (rs.next()) {
-                int id = rs.getInt("product_ID");
-                String name = rs.getString("product_Name");
-                double price = rs.getDouble("product_Price");
-                int stockLeft = rs.getInt("product_StockLeft");
+                while (rs.next()) {
+                    int id = rs.getInt("product_ID");
+                    String name = rs.getString("product_Name");
+                    double price = rs.getDouble("product_Price");
+                    int stockLeft = rs.getInt("product_StockLeft");
 
-                model.addRow(new Object[]{id, name, price, stockLeft});
+                    model.addRow(new Object[]{id, name, price, stockLeft});
+                }
+
+                JTable table = new JTable(model);
+                table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+                adjustColumnWidths(table);
+                JScrollPane scrollPane = new JScrollPane(table);
+
+                int result = JOptionPane.showOptionDialog(null, scrollPane, "All Available Products", JOptionPane.OK_CANCEL_OPTION, JOptionPane.INFORMATION_MESSAGE, null, null, null);
+
+                if (result == JOptionPane.OK_OPTION) {
+                    int selectedRow = table.getSelectedRow();
+                    if (selectedRow != -1) {
+                        int productID = (int) table.getValueAt(selectedRow, 0);
+                        productID_Field.setText(String.valueOf(productID));
+                    }
+                }
+
+            } catch (SQLException e) {
+                JOptionPane.showMessageDialog(null, "Error fetching product list.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+    }
+
+    // Method to adjust column widths
+    private void adjustColumnWidths(JTable table) {
+        final int margin = 5;
+        for (int columnIndex = 0; columnIndex < table.getColumnCount(); columnIndex++) {
+            TableColumn column = table.getColumnModel().getColumn(columnIndex);
+
+            // Calculate the width based on the header
+            int width = table.getTableHeader().getDefaultRenderer()
+                    .getTableCellRendererComponent(table, column.getHeaderValue(), false, false, 0, columnIndex)
+                    .getPreferredSize().width;
+
+            // Calculate the width based on the content
+            for (int row = 0; row < table.getRowCount(); row++) {
+                int preferredWidth = table.getCellRenderer(row, columnIndex)
+                        .getTableCellRendererComponent(table, table.getValueAt(row, columnIndex), false, false, row, columnIndex)
+                        .getPreferredSize().width;
+                width = Math.max(width, preferredWidth);
             }
 
-            // Create a JTable with the model
-            JTable table = new JTable(model);
+            // Add margin
+            width += margin;
 
-            // Use ColumnsAutoSizer to adjust column widths
-            ColumnsAutoSizer.sizeColumnsToFit(table);
-
-            // Display the table in a JOptionPane
-            JOptionPane.showMessageDialog(null, new JScrollPane(table), "All Available Products", JOptionPane.INFORMATION_MESSAGE);
-
-        } catch (SQLException e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(null, "Error fetching product list.", "Error", JOptionPane.ERROR_MESSAGE);
+            // Set the width
+            column.setPreferredWidth(width);
         }
     }
+
 
     public void updateTransactionTotal(DefaultTableModel transactionTableModel, int currentTotalAmount, JLabel orderTotalLabel) {
         double total = currentTotalAmount; // Initialize total with the currentTotalAmount
