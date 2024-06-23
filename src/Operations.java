@@ -3,6 +3,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -16,6 +18,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Vector;
+import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
@@ -2654,8 +2657,15 @@ public class Operations {
                         }
     
                         if (!productAlreadyAdded) {
-                            // Product is not yet in the transaction, add new row
-                            double subtotal = productPrice * quantity;
+                            // Convert productPrice to BigDecimal
+                            BigDecimal price = BigDecimal.valueOf(productPrice);
+                            BigDecimal qty = BigDecimal.valueOf(quantity);
+                            
+                            // Calculate the subtotal and round it to 2 decimal places
+                            BigDecimal subtotal = price.multiply(qty).setScale(2, RoundingMode.HALF_UP);
+
+                            // Convert subtotal back to double
+                            double roundedSubtotal = subtotal.doubleValue();
     
                             // Insert the item into tbl_item
                             String insertQuery = "INSERT INTO tbl_item (product_ID, transaction_ID, product_Quantity, item_Price, item_SubTotal) VALUES (?, ?, ?, ?, ?)";
@@ -2664,7 +2674,7 @@ public class Operations {
                                 insertPstmt.setInt(2, transactionID);
                                 insertPstmt.setInt(3, quantity);
                                 insertPstmt.setDouble(4, productPrice);
-                                insertPstmt.setDouble(5, subtotal);
+                                insertPstmt.setDouble(5, roundedSubtotal);
                                 int rowsInserted = insertPstmt.executeUpdate();
                                 System.out.println("Rows inserted into tbl_item: " + rowsInserted);
                             }
@@ -3161,6 +3171,11 @@ public class Operations {
         return -1;
     }
 
+    // Helper method to check if a string contains numbers
+    private boolean containsNumbers(String str) {
+        return Pattern.compile("[0-9]").matcher(str).find();
+    }
+
     public boolean addCustomerWhoDidNotPayFull(Connection conn, int transactionID) {
         while (true) {
             try {
@@ -3171,7 +3186,18 @@ public class Operations {
 
                 // Prompt for customer details
                 String firstName = JOptionPane.showInputDialog(null, "Enter customer's first name:", "Customer Details", JOptionPane.PLAIN_MESSAGE);
+                if (firstName == null) {
+                    return false; // User cancelled the input
+                }
+                if (firstName.isEmpty() || containsNumbers(firstName)) {
+                    JOptionPane.showMessageDialog(null, "First name is required and must not contain numbers.", "Error", JOptionPane.ERROR_MESSAGE);
+                    continue; // Prompt again
+                }
+
                 String lastName = JOptionPane.showInputDialog(null, "Enter customer's last name (optional):", "Customer Details", JOptionPane.PLAIN_MESSAGE);
+                if (lastName == null) {
+                    return false; // User cancelled the input
+                }
 
                 // Get available contact numbers for the given first name and last name
                 List<String> contactNumbers = getAvailableContactNumbers(conn, firstName, lastName);
@@ -3196,18 +3222,46 @@ public class Operations {
                         JOptionPane.showMessageDialog(null, "Error: Failed to add customer.", "Error", JOptionPane.ERROR_MESSAGE);
                     }
                 } else {
-                    // Show combo box to select from available contact numbers
+                    // Show combo box to select from available contact numbers with existing
                     JComboBox<String> contactNumberComboBox = new JComboBox<>(contactNumbers.toArray(new String[0]));
                     JPanel panel = new JPanel();
                     panel.add(new JLabel("Select customer's contact number:"));
                     panel.add(contactNumberComboBox);
+                    // Add an option for adding a new customer with the same name
+                    contactNumberComboBox.addItem("Add New Customer with Same Name");
+
                     int option = JOptionPane.showConfirmDialog(null, panel, "Select Contact Number", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
                     if (option == JOptionPane.OK_OPTION) {
+                        // Get the selected item from the combo box
                         String selectedContactNumber = (String) contactNumberComboBox.getSelectedItem();
-                        int customerID = getCustomerIDFromContactNumber(conn, selectedContactNumber);
-                        // Update the transaction with the customer ID
-                        updateTransactionWithCustomer(conn, transactionID, customerID);
-                        return true;
+
+                        if (selectedContactNumber.equals("Add New Customer with Same Name")) {
+                            // Prompt for a new contact number
+                            String contactNumber = JOptionPane.showInputDialog(null, "Enter customer's contact number (must start with 639 and be 12 digits long):", "Customer Details", JOptionPane.PLAIN_MESSAGE);
+                            if (contactNumber == null || contactNumber.isEmpty()) {
+                                JOptionPane.showMessageDialog(null, "Contact number is required.", "Error", JOptionPane.ERROR_MESSAGE);
+                                continue; // Prompt again
+                            }
+                            if (!isValidContactNumber(contactNumber)) {
+                                JOptionPane.showMessageDialog(null, "Contact number must start with 639 and be 12 digits long.", "Error", JOptionPane.ERROR_MESSAGE);
+                                continue; // Prompt again
+                            }
+
+                            // Insert the new customer into tbl_customer
+                            int customerID = insertCustomer(conn, firstName, lastName, contactNumber);
+                            if (customerID != -1) {
+                                // Update the transaction with the new customer ID
+                                updateTransactionWithCustomer(conn, transactionID, customerID);
+                                return true; // Customer added successfully
+                            } else {
+                                JOptionPane.showMessageDialog(null, "Error: Failed to add customer.", "Error", JOptionPane.ERROR_MESSAGE);
+                            }
+                        } else {
+                            // User selected an existing contact number, get the customer ID and update transaction
+                            int customerID = getCustomerIDFromContactNumber(conn, selectedContactNumber, firstName, lastName);
+                            updateTransactionWithCustomer(conn, transactionID, customerID);
+                            return true; // Transaction updated with existing customer
+                        }
                     }
                 }
             } catch (SQLException e) {
@@ -3232,12 +3286,14 @@ public class Operations {
         return contactNumbers;
     }
 
-    // Method to retrieve customer ID based on the selected contact number
-    private int getCustomerIDFromContactNumber(Connection conn, String selectedContactNumber) throws SQLException {
+    // Method to retrieve customer ID based on the selected contact number, first name, and last name
+    private int getCustomerIDFromContactNumber(Connection conn, String selectedContactNumber, String firstName, String lastName) throws SQLException {
         int customerID = -1;
-        String query = "SELECT customer_ID FROM tbl_customer WHERE customer_ContactNum = ?";
+        String query = "SELECT customer_ID FROM tbl_customer WHERE customer_ContactNum = ? AND customer_FirstName = ? AND customer_LastName = ?";
         try (PreparedStatement pstmt = conn.prepareStatement(query)) {
             pstmt.setString(1, selectedContactNumber);
+            pstmt.setString(2, firstName);
+            pstmt.setString(3, lastName);
             ResultSet rs = pstmt.executeQuery();
             if (rs.next()) {
                 customerID = rs.getInt("customer_ID");
@@ -3245,6 +3301,7 @@ public class Operations {
         }
         return customerID;
     }
+
     
     private boolean isCustomerAssociated(Connection conn, int transactionID) throws SQLException {
         // Check if the transaction already has a customer associated with it
@@ -3509,9 +3566,11 @@ public class Operations {
                         JOptionPane.showMessageDialog(null, "Transaction is already paid. No further payment can be added.");
                         return;
                     }
+
+                    double currentTotalAmount  = totalPrice - totalPaid; 
                     
                     // Show the current transaction_TotalPrice with transaction_TotalPaid
-                    String message = String.format("Total Amount: %.2f\nTotal Paid: %.2f", totalPrice, totalPaid);
+                    String message = String.format("Total Amount: %.2f\nTotal Paid: %.2f\nTotal Amount Left: %.2f", totalPrice, totalPaid, currentTotalAmount);
                     String amountPaidStr = JOptionPane.showInputDialog(message + "\nEnter amount to pay:");
                     
                     if (amountPaidStr == null) {
@@ -3528,9 +3587,13 @@ public class Operations {
                     
                     double newTotalPaid = totalPaid + amountPaid;
                     
+                    double changeAmount = newTotalPaid - totalPrice;
+                    
                     // If amountPaid + currentTotalPaid is equal or greater than totalAmount, set transaction_OrderStatus to 'paid'
                     String updateQuery;
                     if (newTotalPaid >= totalPrice) {
+                        JOptionPane.showMessageDialog(null, "Change: ₱" + changeAmount);
+
                         updateQuery = "UPDATE tbl_transaction SET transaction_TotalPaid = ?, transaction_OrderStatus = 'paid' " +
                                     "WHERE transaction_ID = ?";
                     } else {

@@ -1,0 +1,8 @@
+Transaction Receipt
+===================
+Transaction ID: 7037
+Date: 2024-06-20
+Total Amount: ?2208.40
+Amount Paid: ?2300.00
+Order Status: paid
+Change: ?91.60

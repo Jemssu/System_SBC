@@ -566,102 +566,16 @@ public class GenerateReport extends JFrame{
 
     public void generateCustomSalesReport() {
         int choice = JOptionPane.showOptionDialog(null,
-                "Do you want to use the data currently displayed in the table or generate new data?",
+                "Do you want to use the data currently displayed in the table or exit?",
                 "Data Choice",
-                JOptionPane.YES_NO_CANCEL_OPTION,
+                JOptionPane.YES_NO_OPTION,
                 JOptionPane.QUESTION_MESSAGE,
                 null,
-                new String[]{"Use Current Data", "Generate New Data"},
+                new String[]{"Use Current Data", "Exit"},
                 "Use Current Data");
     
-        if (choice == JOptionPane.CANCEL_OPTION || choice == JOptionPane.CLOSED_OPTION) {
+        if (choice == JOptionPane.NO_OPTION || choice == JOptionPane.CLOSED_OPTION) {
             JOptionPane.showMessageDialog(null, "Report generation cancelled.", "Cancelled", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-    
-        if (choice == JOptionPane.YES_OPTION) {
-            // Save the table to an Excel file using the current data
-            saveTableToExcel("CustomSalesReport " + LocalDate.now().toString());
-            return;
-        }
-    
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-    
-        // Ask the user for the starting date
-        String fromDateInput = JOptionPane.showInputDialog(null, "Enter the starting date (yyyy-MM-dd):", "Starting Date", JOptionPane.QUESTION_MESSAGE);
-        if (fromDateInput == null || fromDateInput.trim().isEmpty()) {
-            JOptionPane.showMessageDialog(null, "No starting date entered. Report generation cancelled.", "Cancelled", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-    
-        LocalDate fromDate;
-        try {
-            fromDate = LocalDate.parse(fromDateInput.trim(), formatter);
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(null, "Invalid starting date format. Report generation cancelled.", "Error", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-    
-        // Ask the user for the ending date
-        String toDateInput = JOptionPane.showInputDialog(null, "Enter the ending date (yyyy-MM-dd):", "Ending Date", JOptionPane.QUESTION_MESSAGE);
-        if (toDateInput == null || toDateInput.trim().isEmpty()) {
-            JOptionPane.showMessageDialog(null, "No ending date entered. Report generation cancelled.", "Cancelled", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-    
-        LocalDate toDate;
-        try {
-            toDate = LocalDate.parse(toDateInput.trim(), formatter);
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(null, "Invalid ending date format. Report generation cancelled.", "Error", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-    
-        // Ask the user for the order status
-        String[] statuses = {"pending", "paid", "both"};
-        String selectedStatus = (String) JOptionPane.showInputDialog(null, "Select order status:", "Order Status",
-                JOptionPane.QUESTION_MESSAGE, null, statuses, statuses[0]);
-    
-        if (selectedStatus == null) {
-            JOptionPane.showMessageDialog(null, "No order status selected. Report generation cancelled.", "Cancelled", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-    
-        String orderStatus;
-        if ("both".equals(selectedStatus)) {
-            orderStatus = "pending', 'paid";
-        } else {
-            orderStatus = selectedStatus;
-        }
-    
-        // Set the filter values for the custom report
-        String filterFilePath = "srfilter.txt"; // Ensure this is the correct path
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filterFilePath))) {
-            writer.write("dateSelectRange.fromDate = " + fromDate + "\n");
-            writer.write("dateSelectRange.toDate = " + toDate + "\n");
-            writer.write("orderStatus.showStatus = " + orderStatus + "\n");
-            System.out.println("Filter file updated successfully.");
-        } catch (IOException e) {
-            e.printStackTrace();
-            System.err.println("Failed to update the filter file.");
-        }
-    
-        // Verify if the file was updated correctly
-        try {
-            System.out.println("Contents of the filter file:");
-            Files.lines(Paths.get(filterFilePath)).forEach(System.out::println);
-        } catch (IOException e) {
-            e.printStackTrace();
-            System.err.println("Failed to read the filter file.");
-        }
-    
-        // Update the table with the custom report data
-        updateSalesReportTable();
-        updateProductSalesReportTable();
-    
-        // Ask the user if they want to see the updated table
-        int response = JOptionPane.showConfirmDialog(null, "Do you want to see the updated table before saving?", "Confirm", JOptionPane.YES_NO_OPTION);
-        if (response == JOptionPane.YES_OPTION) {
             return;
         }
     

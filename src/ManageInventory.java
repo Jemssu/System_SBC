@@ -510,7 +510,7 @@ public class ManageInventory extends JFrame {
             } else if (stockLeft >= 50) {
                 cell.setBackground(Color.decode("#ffff80"));
             } else if (stockLeft > 0 && stockLeft < 50) {
-                cell.setBackground(Color.decode("#ffbf80"));
+                cell.setBackground(Color.decode("#ffff80"));
             } else if (stockLeft == 0) {
                 cell.setBackground(Color.decode("#ff8080"));
             } else {

@@ -492,8 +492,10 @@ public class ModifyOrder extends JFrame {
 
                     // Update the order total label
                     System.out.println("Before updating transaction total: Current Total Amount = " + currentTotalAmount);
-                    ops.updateTransactionTotal(transaction_TableModel, currentTotalAmount, orderTotalLabel);
-                    ops.updateTransactionTotalBySQL(ops.getTransactionID(transaction_label), orderTotalLabel);
+                    int currenttransactionID = ops.getTransactionID(transaction_label);
+
+                    ops.updateTransactionTotalBySQL(currenttransactionID, orderTotalLabel);
+                    ops.updateTransactionTableBySQL(currenttransactionID, transaction_TableModel);
                     ops.checkItemFromTransaction(productID, itemNameLabel, itemLengthLabel, itemPriceLabel, itemLeftLabel);
                 } catch (NumberFormatException ex) {
                     JOptionPane.showMessageDialog(null, "Error: Invalid product ID.", "Error", JOptionPane.ERROR_MESSAGE);
