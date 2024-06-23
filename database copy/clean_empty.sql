@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jun 14, 2024 at 01:58 PM
+-- Generation Time: Jun 16, 2024 at 04:00 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -1154,7 +1154,7 @@ ALTER TABLE `tbl_supplier`
 -- AUTO_INCREMENT for table `tbl_transaction`
 --
 ALTER TABLE `tbl_transaction`
-  MODIFY `transaction_ID` int(16) NOT NULL AUTO_INCREMENT;
+  MODIFY `transaction_ID` int(16) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7001;
 
 --
 -- AUTO_INCREMENT for table `tbl_type`
@@ -1192,7 +1192,7 @@ ALTER TABLE `tbl_item`
 ALTER TABLE `tbl_product`
   ADD CONSTRAINT `fk_last_supplied` FOREIGN KEY (`last_Supplied_BY`) REFERENCES `tbl_supplier` (`supplier_ID`),
   ADD CONSTRAINT `tbl_product_ibfk_1` FOREIGN KEY (`type_ID`) REFERENCES `tbl_type` (`type_ID`),
-  ADD CONSTRAINT `tbl_product_ibfk_2` FOREIGN KEY (`Size_ID`) REFERENCES `tbl_size` (`size_ID`);
+  ADD CONSTRAINT `tbl_product_ibfk_2` FOREIGN KEY (`size_ID`) REFERENCES `tbl_size` (`size_ID`);
 
 --
 -- Constraints for table `tbl_transaction`
