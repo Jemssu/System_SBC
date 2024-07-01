@@ -5,4 +5,4 @@ THis is a project developed by Mapua Malayan Colleges Mindanao (MMCM) Students i
 It aims to address basic problems that a Nuts-and-Bolts Store would be facing, in this scenario we collaborated with Stephanie Bolt Center.
 By collaborating with a real company, we get to see various instances and situations, thus listed below are the main functionalities of the said project.
 
-** AA **
+**AA**
