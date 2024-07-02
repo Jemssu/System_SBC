@@ -424,7 +424,7 @@ public class Dashboard extends JFrame {
         loginPanel.add(loginButton);
 
         loginButton.setBounds(325, 150, 170, 40);
-        loginButton.setBackground(Color.decode(buttonColor));
+        loginButton.setBackground(Color.decode("#5c5c8a"));
         loginButton.setForeground(Color.decode(fontColor));
         bottomLeftPanel.add(loginPanel);
 
@@ -441,7 +441,7 @@ public class Dashboard extends JFrame {
                     loginButton.setBackground(Color.decode(buttonColorOff)); // Change color when pressed
                     System.out.println("Login - Is Pressed");
                 } else {
-                    loginButton.setBackground(Color.decode(buttonColor)); // Change color back when released
+                    loginButton.setBackground(Color.decode("#5c5c8a")); // Change color back when released
                     previousPressedState7 = currentPressedState7;
                 }
             }
@@ -529,7 +529,7 @@ public class Dashboard extends JFrame {
         welcomePanel.add(logoutButton);
 
         logoutButton.setBounds(325, 150, 170, 40);
-        logoutButton.setBackground(Color.decode(buttonColor));
+        logoutButton.setBackground(Color.decode("#5c5c8a"));
         logoutButton.setForeground(Color.decode(fontColor));
         
 
@@ -546,7 +546,7 @@ public class Dashboard extends JFrame {
                     logoutButton.setBackground(Color.decode(buttonColorOff)); // Change color when pressed
                     System.out.println("Logout - Is Pressed");
                 } else {
-                    logoutButton.setBackground(Color.decode(buttonColor)); // Change color back when released
+                    logoutButton.setBackground(Color.decode("#5c5c8a")); // Change color back when released
                     previousPressedState7 = currentPressedState7;
                 }
             }
@@ -629,7 +629,7 @@ public class Dashboard extends JFrame {
         // Adding Admin Button
         adminButton = new JButton("Admin Mode");
         adminButton.setBounds(5, 275, 240, 40);
-        adminButton.setBackground(Color.decode(buttonColor));
+        adminButton.setBackground(Color.decode("#5c5c8a"));
         adminButton.setForeground(Color.decode(fontColor));
         welcomePanel.add(adminButton);
 
@@ -652,7 +652,7 @@ public class Dashboard extends JFrame {
                     // Freeze the dashboardFrame until newOrder is closed
                     hideMainDashboard();
                 } else {
-                    adminButton.setBackground(Color.decode(buttonColor)); // Change color back when released
+                    adminButton.setBackground(Color.decode("#5c5c8a")); // Change color back when released
                     previousPressedState5 = currentPressedState5;
                 }
             }

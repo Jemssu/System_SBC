@@ -23,9 +23,12 @@ import java.util.stream.IntStream;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
-import javax.swing.table.TableColumnModel;w
+import javax.swing.table.TableColumnModel;
+import javax.swing.table.TableRowSorter;
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 
 import org.apache.poi.ss.usermodel.Font;
 /**
@@ -187,71 +190,70 @@ public class Operations {
     */
 
     public void addCustomer() {
-    JTextField fnameField = new JTextField(10);
-    JTextField lnameField = new JTextField(10);
-    JTextField contactField = new JTextField(10);
-
-    JPanel panel = new JPanel();
-    panel.setLayout(new GridLayout(3, 2, 5, 5)); 
-
-    panel.add(new JLabel("First Name:"));
-    panel.add(fnameField);
-    panel.add(new JLabel("Last Name:"));
-    panel.add(lnameField);
-    panel.add(new JLabel("Contact Number:"));
-    panel.add(contactField);
-
-    int result = JOptionPane.showConfirmDialog(null, panel, "Input Form", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
-
-    if (result == JOptionPane.OK_OPTION) {
-        String fname = fnameField.getText();
-        String lname = lnameField.getText();
-        String contact = contactField.getText();
-
-        // Validate contact number format
-        if (!contact.matches("^639\\d{9}$")) {
-            JOptionPane.showMessageDialog(null, "Contact number must be 12 digits and start with 639.", "Invalid Input", JOptionPane.ERROR_MESSAGE);
-            return; // Exit the method if contact number format is invalid
-        }
-
-        // Check if customer with the same details already exists
-        String query = "SELECT COUNT(*) FROM tbl_customer WHERE customer_FirstName = ? AND customer_LastName = ? AND customer_ContactNum = ?";
-        try (Connection conn = connect();
-            PreparedStatement pstmt = conn.prepareStatement(query)) {
-            pstmt.setString(1, fname);
-            pstmt.setString(2, lname);
-            pstmt.setString(3, contact);
-            ResultSet rs = pstmt.executeQuery();
-
-            if (rs.next() && rs.getInt(1) > 0) {
-                JOptionPane.showMessageDialog(null, "Customer with the same details already exists.", "Existing Customer", JOptionPane.WARNING_MESSAGE);
-                return; // Exit the method if customer already exists
+        JTextField fnameField = new JTextField(10);
+        JTextField lnameField = new JTextField(10);
+        JTextField contactField = new JTextField(10);
+    
+        JPanel panel = new JPanel();
+        panel.setLayout(new GridLayout(3, 2, 5, 5));
+    
+        panel.add(new JLabel("First Name:"));
+        panel.add(fnameField);
+        panel.add(new JLabel("Last Name:"));
+        panel.add(lnameField);
+        panel.add(new JLabel("Contact Number:"));
+        panel.add(contactField);
+    
+        int result = JOptionPane.showConfirmDialog(null, panel, "Input Form", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+    
+        if (result == JOptionPane.OK_OPTION) {
+            String fname = fnameField.getText();
+            String lname = lnameField.getText();
+            String contact = contactField.getText();
+    
+            // Validate contact number format
+            if (!contact.matches("^639\\d{9}$")) {
+                JOptionPane.showMessageDialog(null, "Contact number must be 12 digits and start with 639.", "Invalid Input", JOptionPane.ERROR_MESSAGE);
+                return; // Exit the method if contact number format is invalid
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(null, "Error checking customer: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-            return; // Exit the method in case of database error
-        }
-
-        // If validation passes, proceed to insert the customer
-        String insertQuery = "INSERT INTO tbl_customer(customer_FirstName, customer_LastName, customer_ContactNum) VALUES (?,?,?)";
-        try (Connection conn = connect();
-            PreparedStatement pstmt = conn.prepareStatement(insertQuery)) {
-            pstmt.setString(1, fname);
-            pstmt.setString(2, lname);
-            pstmt.setString(3, contact);
-
-            int rowsInserted = pstmt.executeUpdate();
-            if (rowsInserted > 0) {
-                System.out.println("Added successfully.");
-                JOptionPane.showMessageDialog(null, "A new customer was added successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
+    
+            // Check if customer with the same contact number already exists
+            String query = "SELECT COUNT(*) FROM tbl_customer WHERE customer_ContactNum = ?";
+            try (Connection conn = connect();
+                PreparedStatement pstmt = conn.prepareStatement(query)) {
+                pstmt.setString(1, contact);
+                ResultSet rs = pstmt.executeQuery();
+    
+                if (rs.next() && rs.getInt(1) > 0) {
+                    JOptionPane.showMessageDialog(null, "Customer with the same contact number already exists.", "Existing Customer", JOptionPane.WARNING_MESSAGE);
+                    return; // Exit the method if customer with the same contact number already exists
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+                JOptionPane.showMessageDialog(null, "Error checking customer: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                return; // Exit the method in case of database error
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(null, "Error adding customer: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+    
+            // If validation passes, proceed to insert the customer
+            String insertQuery = "INSERT INTO tbl_customer(customer_FirstName, customer_LastName, customer_ContactNum) VALUES (?,?,?)";
+            try (Connection conn = connect();
+                PreparedStatement pstmt = conn.prepareStatement(insertQuery)) {
+                pstmt.setString(1, fname);
+                pstmt.setString(2, lname);
+                pstmt.setString(3, contact);
+    
+                int rowsInserted = pstmt.executeUpdate();
+                if (rowsInserted > 0) {
+                    System.out.println("Added successfully.");
+                    JOptionPane.showMessageDialog(null, "A new customer was added successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+                JOptionPane.showMessageDialog(null, "Error adding customer: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            }
         }
-    } 
-}
+    }
+    
 
 
     /**DESCRIPTION
@@ -2847,7 +2849,8 @@ public class Operations {
     }
     
 
-   // Method to fetch product information from the database based on product ID
+    // Method to fetch product information from the database based on product ID
+    // Method to fetch product information from the database based on product ID
     public void checkItemFromTransaction(int productID, JLabel itemNameLabel, JLabel itemLengthLabel, JLabel itemPriceLabel, JLabel itemLeftLabel) {
         System.out.println("Received product ID: " + productID);
         try (Connection conn = connect()) {
@@ -2882,7 +2885,7 @@ public class Operations {
                         // Update GUI labels with product information
                         itemNameLabel.setText("TYPE: " + typeName);
                         itemLengthLabel.setText("LENGTH: " + sizeLength);
-                        itemPriceLabel.setText("PRICE: " + productPrice);
+                        itemPriceLabel.setText(String.format("PRICE: %.2f", productPrice));
                         itemLeftLabel.setText("STOCK: " + stockLeft);
                     }
                 }
@@ -2893,6 +2896,7 @@ public class Operations {
             JOptionPane.showMessageDialog(null, "Error fetching product information.", "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
+
     
     public void seeProductList(JTextField productID_Field) {
         SwingUtilities.invokeLater(() -> {
@@ -2921,9 +2925,32 @@ public class Operations {
                 JTable table = new JTable(model);
                 table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
                 adjustColumnWidths(table);
-                JScrollPane scrollPane = new JScrollPane(table);
 
-                int result = JOptionPane.showOptionDialog(null, scrollPane, "All Available Products", JOptionPane.OK_CANCEL_OPTION, JOptionPane.INFORMATION_MESSAGE, null, null, null);
+                // Create a row sorter for the table
+                TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(model);
+                table.setRowSorter(sorter);
+
+                // Create a search bar
+                JTextField searchBar = new JTextField(15);
+                searchBar.addKeyListener(new KeyAdapter() {
+                    @Override
+                    public void keyReleased(KeyEvent e) {
+                        String text = searchBar.getText().trim();
+                        if (text.length() == 0) {
+                            sorter.setRowFilter(null);
+                        } else {
+                            sorter.setRowFilter(RowFilter.regexFilter("(?i)" + text));
+                        }
+                    }
+                });
+
+                // Add the search bar and the table to a panel
+                JPanel panel = new JPanel(new BorderLayout());
+                panel.add(searchBar, BorderLayout.NORTH);
+                JScrollPane scrollPane = new JScrollPane(table);
+                panel.add(scrollPane, BorderLayout.CENTER);
+
+                int result = JOptionPane.showOptionDialog(null, panel, "All Available Products", JOptionPane.OK_CANCEL_OPTION, JOptionPane.INFORMATION_MESSAGE, null, null, null);
 
                 if (result == JOptionPane.OK_OPTION) {
                     int selectedRow = table.getSelectedRow();
@@ -2974,8 +3001,8 @@ public class Operations {
             total += subtotal;
         }
         System.out.println("New Total: " + total); // Print the new total
-        orderTotalLabel.setText("Total Amount: ₱" + total);
-    }
+        orderTotalLabel.setText(String.format("Total Amount: ₱%.2f", total)); // Set the total with 2 decimal places
+    }    
 
     public void updateTransactionTotalBySQL(int transactionID, JLabel orderTotalLabel) {
         try (Connection conn = connect()) {
@@ -2988,8 +3015,8 @@ public class Operations {
                         // Get the total amount from the result set
                         double totalAmount = rs.getDouble("total");
                         
-                        // Update the JLabel with the total amount
-                        orderTotalLabel.setText("Total Amount: ₱" + totalAmount);
+                        // Update the JLabel with the total amount formatted to 2 decimal places
+                        orderTotalLabel.setText(String.format("Total Amount: ₱%.2f", totalAmount));
                     } else {
                         // If no items found for the transaction, set total amount to 0
                         orderTotalLabel.setText("Total Amount: ₱0.00");
@@ -3001,7 +3028,7 @@ public class Operations {
             // Handle database errors
             JOptionPane.showMessageDialog(null, "Error: Database error.", "Error", JOptionPane.ERROR_MESSAGE);
         }
-    }
+    }    
 
     private boolean hasItemsInTransaction(Connection conn, int transactionID) throws SQLException {
         // Check if there are items in the transaction

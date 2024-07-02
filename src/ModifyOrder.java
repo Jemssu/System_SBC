@@ -543,24 +543,32 @@ public class ModifyOrder extends JFrame {
             }
         });
         
+        // Define the desired font size
+        int fontSize = 30;
+
         orderTotalLabel = new JLabel("Total Amount: ₱0.00");
-        orderTotalLabel.setBounds(5, 600, 500, 35);
+        orderTotalLabel.setBounds(270, 600, 500, 35);
+        orderTotalLabel.setFont(orderTotalLabel.getFont().deriveFont((float) fontSize)); // Set the font size
         rightPanel.add(orderTotalLabel);
 
         itemNameLabel = new JLabel("" + checkedType);
-        itemNameLabel.setBounds(270, 340, 250, 50);
+        itemNameLabel.setBounds(270, 340, 500, 50);
+        itemNameLabel.setFont(itemNameLabel.getFont().deriveFont((float) fontSize)); // Set the font size
         rightPanel.add(itemNameLabel);
 
         itemLengthLabel = new JLabel("" + checkedLength);
-        itemLengthLabel.setBounds(270, 400, 250, 50);
+        itemLengthLabel.setBounds(270, 400, 500, 50);
+        itemLengthLabel.setFont(itemLengthLabel.getFont().deriveFont((float) fontSize)); // Set the font size
         rightPanel.add(itemLengthLabel);
 
         itemPriceLabel = new JLabel("" + checkedPrice);
-        itemPriceLabel.setBounds(270, 460, 250, 50);
+        itemPriceLabel.setBounds(270, 460, 500, 50);
+        itemPriceLabel.setFont(itemPriceLabel.getFont().deriveFont((float) fontSize)); // Set the font size
         rightPanel.add(itemPriceLabel);
 
         itemLeftLabel = new JLabel("" + checkedStockLeft);
-        itemLeftLabel.setBounds(270, 520, 250, 50);
+        itemLeftLabel.setBounds(270, 520, 500, 50);
+        itemLeftLabel.setFont(itemLeftLabel.getFont().deriveFont((float) fontSize)); // Set the font size
         rightPanel.add(itemLeftLabel);
 
         yesTransaction();
