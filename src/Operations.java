@@ -23,7 +23,7 @@ import java.util.stream.IntStream;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
-import javax.swing.table.TableColumnModel;
+import javax.swing.table.TableColumnModel;w
 import javax.swing.*;
 import java.awt.*;
 
